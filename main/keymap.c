@@ -184,7 +184,7 @@ uint16_t default_slave_encoder_map[LAYERS][ENCODER_SIZE] = {
 #define XXXXXXX KC_NO
 
 // Each keymap is represented by an array, with an array that points to all the keymaps  by order
-	 uint16_t _QWERTY[MATRIX_ROWS][KEYMAP_COLS]={
+	 uint16_t _MEDIA[MATRIX_ROWS][KEYMAP_COLS]={
 
 			/* MEDIA
 			 * ,-----------------------------------------------------------------------.
@@ -286,7 +286,7 @@ uint16_t default_slave_encoder_map[LAYERS][ENCODER_SIZE] = {
 
 	// 	};
  //Create an array that points to the various keymaps
-uint16_t (*default_layouts[])[MATRIX_ROWS][KEYMAP_COLS] = { &_QWERTY, &_NUM,
+uint16_t (*default_layouts[])[MATRIX_ROWS][KEYMAP_COLS] = { &_MEDIA, &_NUM,
 			&_PLUGINS
 		};
 

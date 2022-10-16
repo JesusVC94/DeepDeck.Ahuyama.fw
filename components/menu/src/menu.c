@@ -505,7 +505,6 @@ uint8_t menu_get_goto_sleep(void)
   return goto_sleep;
 }
 
-
 uint8_t menu_send_rgb_mode(uint8_t mode)
 {
   int mode_t = mode;

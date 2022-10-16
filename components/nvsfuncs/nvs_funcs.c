@@ -34,8 +34,8 @@
 #define NVS_TAG "NVS Storage"
 
 #define KEYMAP_NAMESPACE "keymap_config"
-#define ENCODER_NAMESPACE "encoder_config"
-#define SLAVE_ENCODER_NAMESPACE "slave_encoder_config"
+#define ENCODER_NAMESPACE "encoder1_config"
+#define SLAVE_ENCODER_NAMESPACE "encoder2_config"
 
 esp_err_t err;
 
@@ -92,7 +92,7 @@ void nvs_read_encoder_layout(const char* layout_name,uint16_t buffer[ENCODER_SIZ
 	}
 	size_t arr_size;
 	//get blob array size
-	err = nvs_get_blob(keymap_handle, layout_name, NULL, &arr_size);
+	//err = nvs_get_blob(keymap_handle, layout_name, NULL, &arr_size);
 	err = nvs_get_blob(keymap_handle,layout_name,layout,&arr_size);
 	if (err != ESP_OK) {
 		ESP_LOGE(NVS_TAG, "Error getting layout: %s", esp_err_to_name(err));
@@ -261,7 +261,7 @@ void nvs_read_keymap_cfg(void){
 	//get string array size
 	err = nvs_get_str(keymap_handle, LAYOUT_NAMES, NULL, &str_size);
 	if (err != ESP_OK) {
-		ESP_LOGI(NVS_TAG, "Error getting layout names size: %s", esp_err_to_name(err));
+		ESP_LOGE(NVS_TAG, "Error getting layout names size: %s", esp_err_to_name(err));
 	}
 	char *layer_names = (char *)malloc(str_size);
 	err = nvs_get_str(keymap_handle,LAYOUT_NAMES, layer_names, &str_size);

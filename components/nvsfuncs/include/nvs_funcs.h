@@ -36,6 +36,16 @@ void nvs_read_layout(const char* layout_name,uint16_t buffer[MATRIX_ROWS][KEYMAP
 void nvs_write_layout(uint16_t layout[MATRIX_ROWS][KEYMAP_COLS],const char* layout_name);
 
 /*
+ * @add or overwrite an encoder layout to the nvs
+ */
+void nvs_write_encoder_layout(uint16_t encoder_layout_arr[ENCODER_SIZE], const char* encoder_layout_name);
+
+/*
+ * @add or overwrite a slave encoder layout to the nvs
+ */
+void nvs_write_slave_encoderlayout_(uint16_t encoder_layout_arr[ENCODER_SIZE], const char* encoder_layout_name);
+
+/*
  * @brief read keyboard configuration from nvs
  */
 void nvs_read_keymap_cfg(void);

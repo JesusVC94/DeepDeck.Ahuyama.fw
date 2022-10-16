@@ -406,7 +406,20 @@ extern "C" void app_main() {
 
 	//Loading layouts from nvs (if found)
 #ifdef MASTER
+	// nvs_write_layout((*default_layouts)[0],default_layout_names[0]);
+	// nvs_write_encoder_layout(default_encoder_map[0], default_layout_names[0]);
+	// nvs_write_slave_encoderlayout_(default_slave_encoder_map[0], default_layout_names[0]);
+
 	nvs_load_layouts();
+	
+	// // If not found, record the standard data. // CHECK
+	// for(uint8_t i = 0;i < LAYERS; i++)
+	// {
+	// 	ESP_LOGI("MAIN", "------------------------------------------------------");
+	// 	nvs_write_layout((*default_layouts)[i],default_layout_names[i]);
+	// }
+
+
 	//activate keyboard BT stack
 	halBLEInit(1, 1, 1, 0);
 	ESP_LOGI("HIDD", "MAIN finished...");
