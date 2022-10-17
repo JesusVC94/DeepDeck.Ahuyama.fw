@@ -18,6 +18,8 @@
 #include "esp_log.h"
 #include "menu.h"
 
+#define true 1
+#define false 0
 
 #define MY_BORDER_SIZE 1
 //#define U8G2_REF_MAN_PIC
