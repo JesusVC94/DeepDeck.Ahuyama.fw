@@ -68,4 +68,8 @@ void encoder_report(void *pvParameters);
  */
 void deep_sleep(void *pvParameters);
 
+
+
+void gesture_task(void *pvParameters);
+
 #endif

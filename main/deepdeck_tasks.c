@@ -9,9 +9,9 @@
  * 
  */
 
-
 #include "deepdeck_tasks.h"
 #include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 #include "freertos/task.h"
 #include "esp_log.h"
 #include "esp_sleep.h"
@@ -32,7 +32,9 @@
 
 #include "keycode_conv.h"
 
-static const char * TAG = "KeyReport";
+#include "gesture_handles.h"
+
+static const char *TAG = "KeyReport";
 
 #define KEY_REPORT_TAG "KEY_REPORT"
 #define SYSTEM_REPORT_TAG "KEY_REPORT"
@@ -40,10 +42,16 @@ static const char * TAG = "KeyReport";
 #define USEC_TO_SEC 1000000
 #define SEC_TO_MIN 60
 
+#define LONG_TIME 0xffff
+
 #ifdef OLED_ENABLE
 TaskHandle_t xOledTask;
 #endif
 TaskHandle_t xKeyreportTask;
+
+extern SemaphoreHandle_t xSemaphore;
+extern apds9960_handle_t apds9960;
+
 
 /**
  * @todo look a better way to handle the deepsleep flag.
@@ -51,72 +59,67 @@ TaskHandle_t xKeyreportTask;
  */
 bool DEEP_SLEEP = true; // flag to check if we need to go to deep sleep
 
-
-void oled_task(void *pvParameters) 
-{
+void oled_task(void *pvParameters) {
 	deepdeck_status = S_NORMAL;
 	ble_connected_oled();
 	bool CON_LOG_FLAG = false; // Just because I don't want it to keep logging the same thing a billion times
-	while (1) 
-	{
-		switch(deepdeck_status)
-		{
-			case S_NORMAL:
-				if (halBLEIsConnected() == 0) {
-					if (CON_LOG_FLAG == false) {
-						ESP_LOGI(TAG,
-								"Not connected, waiting for connection ");
-					}
-					waiting_oled();
-					DEEP_SLEEP = false;
-					CON_LOG_FLAG = true;
-				} else {
-					if (CON_LOG_FLAG == true) {
-						ble_connected_oled();
-					}
-					update_oled();
-					CON_LOG_FLAG = false;
+	while (1) {
+
+		switch (deepdeck_status) {
+		case S_NORMAL:
+			if (halBLEIsConnected() == 0) {
+				if (CON_LOG_FLAG == false) {
+					ESP_LOGI(TAG, "Not connected, waiting for connection ");
 				}
+				waiting_oled();
+				DEEP_SLEEP = false;
+				CON_LOG_FLAG = true;
+			} else {
+				if (CON_LOG_FLAG == true) {
+					ble_connected_oled();
+				}
+				update_oled();
+				CON_LOG_FLAG = false;
+			}
 			break;
-			case S_SETTINGS:
-				menu_init();
-				vTaskDelay(pdMS_TO_TICKS(200));
+		case S_SETTINGS:
+			menu_init();
+			vTaskDelay(pdMS_TO_TICKS(200));
 
-				menu_screen();
-				ble_connected_oled();
+			menu_screen();
+			ble_connected_oled();
 
-				deepdeck_status = S_NORMAL;
+			deepdeck_status = S_NORMAL;
 
 			break;
 		}
+//		xSemaphoreGive(xSemaphore);
 		vTaskDelay(pdMS_TO_TICKS(250));
 	}
 
 }
 
-
-void battery_reports(void *pvParameters) 
-{
+void battery_reports(void *pvParameters) {
 	//uint8_t past_battery_report[1] = { 0 };
 
-	while(1){
+	while (1) {
 		uint32_t bat_level = get_battery_level();
 		//if battery level is above 100, we're charging
-		if(bat_level > 100){
+		if (bat_level > 100) {
 			bat_level = 100;
 			//if charging, do not enter deepsleep
 			DEEP_SLEEP = false;
 		}
-		void* pReport = (void*) &bat_level;
+		void *pReport = (void*) &bat_level;
 
-		ESP_LOGI("Battery Monitor","battery level %d", bat_level);
-		if(BLE_EN == 1){
-			xQueueSend(battery_q, pReport, (TickType_t) 0);
+		ESP_LOGI("Battery Monitor", "battery level %d", bat_level);
+		if (BLE_EN == 1) {
+			xQueueSend(battery_q, pReport, (TickType_t ) 0);
 		}
-		if(input_str_q != NULL){
-			xQueueSend(input_str_q, pReport, (TickType_t) 0);
+		if (input_str_q != NULL) {
+			xQueueSend(input_str_q, pReport, (TickType_t ) 0);
 		}
-		vTaskDelay(60*1000/ portTICK_PERIOD_MS);
+		vTaskDelay(60 * 1000 / portTICK_PERIOD_MS);
 	}
 }
 
@@ -126,7 +129,7 @@ void key_reports(void *pvParameters)
 	uint8_t past_report[REPORT_LEN] = { 0 };
 	uint8_t report_state[REPORT_LEN];
 
-	while (1) 
+	while (1)
 	{
 		memcpy(report_state, check_key_state(layouts[current_layout]),
 				sizeof report_state);
@@ -175,9 +178,8 @@ void key_reports(void *pvParameters)
 
 }
 
-void rgb_leds_task(void *pvParameters) 
-{
-	
+void rgb_leds_task(void *pvParameters) {
+
 	rgb_key_led_init();
 	rgb_notification_led_init();
 	while (1) {
@@ -186,7 +188,7 @@ void rgb_leds_task(void *pvParameters)
 	}
 }
 
-void encoder_report(void *pvParameters) 
+void encoder_report(void *pvParameters)
 {
 	uint8_t encoder1_status = 0;
 	uint8_t encoder2_status = 0;
@@ -226,11 +228,11 @@ void encoder_report(void *pvParameters)
     // Start encoder
     ESP_ERROR_CHECK(encoder_b->start(encoder_b));
 
-	while (1) 
+	while (1)
 	{
 		encoder1_status = encoder_state(encoder_a);
 
-		if(encoder1_status != past_encoder1_state) 
+		if(encoder1_status != past_encoder1_state)
 		{
 			//EEP_SLEEP = false;
 			// Check if both encoder are pushed, to enter settings mode.
@@ -251,11 +253,11 @@ void encoder_report(void *pvParameters)
 			}
 			past_encoder1_state = encoder1_status;
 		}
-		
+
 		encoder2_status = encoder_state(encoder_b);
 
 		if (encoder2_status != past_encoder2_state) {
-			DEEP_SLEEP = false; 
+			DEEP_SLEEP = false;
 
 			// Check if both encoder are pushed, to enter settings mode.
 			if( encoder2_status == ENC_BUT_LONG_PRESS && encoder_push_state(encoder_a) )
@@ -268,25 +270,62 @@ void encoder_report(void *pvParameters)
 			{
 				encoder_command(encoder2_status, slave_encoder_map[current_layout]);
 			}
-			
+
 			past_encoder2_state = encoder2_status;
 		}
 		taskYIELD();
 	}
 }
 
+void gesture_task(void *pvParameters) {
+
+	while (true) {
+		if( xSemaphoreTake( xSemaphore, LONG_TIME ) == pdTRUE ){
+			ESP_LOGI("Gesture", "xSemaphore Take");
+			ESP_LOGI("Gesture", "Suspend xOledTask");
+			vTaskSuspend(xOledTask);
+
+			uint8_t gesture = apds9960_read_gesture(apds9960);
+			if (gesture == APDS9960_DOWN) {
+				ESP_LOGI("Gesture", "APDS9960_DOWN");
+
+			} else if (gesture == APDS9960_UP) {
+				ESP_LOGI("Gesture", "APDS9960_UP");
+
+			} else if (gesture == APDS9960_LEFT) {
+				ESP_LOGI("Gesture", "APDS9960_LEFT");
+
+			} else if (gesture == APDS9960_RIGHT) {
+				ESP_LOGI("Gesture", "APDS9960_RIGHT");
+
+			}
+
+
+			ESP_LOGI("Gesture", "Wait ");
+			vTaskDelay(pdMS_TO_TICKS(100));
+
+	//		gpio_intr_enable(APDS9960_INT_PIN);
+			ESP_LOGI("Gesture", "Resume xOledTask");
+			vTaskResume(xOledTask);
+		}
+
+
+		vTaskDelay(pdMS_TO_TICKS(100));
+
+
+	}
+
+}
 /*If no key press has been recieved in SLEEP_MINS amount of minutes, put device into deep sleep
  *  wake up on touch on GPIO pin 2
  *  */
 #ifdef SLEEP_MINS
-void deep_sleep(void *pvParameters) 
-{
+void deep_sleep(void *pvParameters) {
 
 	uint64_t initial_time = esp_timer_get_time(); // notice that timer returns time passed in microseconds!
 	uint64_t current_time_passed = 0;
 	uint8_t force_sleep = false;
-	while (1) 
-	{
+	while (1) {
 		current_time_passed = (esp_timer_get_time() - initial_time);
 
 		if (DEEP_SLEEP == false) {
@@ -294,16 +333,14 @@ void deep_sleep(void *pvParameters)
 			initial_time = esp_timer_get_time();
 			DEEP_SLEEP = true;
 		}
-		if (menu_get_goto_sleep())
-		{
+		if (menu_get_goto_sleep()) {
 			force_sleep = true;
 			DEEP_SLEEP = true;
 		}
-		
 
-		if ( ( ((double)current_time_passed/USEC_TO_SEC) >= (double)  (SEC_TO_MIN * SLEEP_MINS)) || force_sleep ) {
-			if (DEEP_SLEEP == true) 
-			{
+		if ((((double) current_time_passed / USEC_TO_SEC)
+				>= (double) (SEC_TO_MIN * SLEEP_MINS)) || force_sleep) {
+			if (DEEP_SLEEP == true) {
 				force_sleep = false;
 				ESP_LOGE(SYSTEM_REPORT_TAG, "going to sleep!");
 #ifdef OLED_ENABLE
