@@ -94,6 +94,7 @@ extern uint16_t macros[MACROS_NUM][MACRO_LEN];
 #define LAYERS_BASE_VAL 0xFF
 
 #define ENCODER_SIZE 5
+#define GESTURE_SIZE 6
 
 typedef struct config_data {
 	char bt_device_name[MAX_BT_DEVICENAME_LENGTH];

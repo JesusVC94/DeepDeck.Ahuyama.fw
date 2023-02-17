@@ -179,6 +179,34 @@ uint16_t default_slave_encoder_map[LAYERS][ENCODER_SIZE] = {
 	 };
 	 
 
+
+/*Gsture keys for each layer by order, and for each pad
+ * First variable states what usage the encoder has
+ */
+
+uint16_t default_gesture_map[LAYERS][GESTURE_SIZE] = {
+		/* Encoder 1 layout
+			 * ,----------------------------------------------------------------------------------------------------------------------------.
+			 * |  ---Layers---   |  	UP		   |      DOWN  	   |      LEFT     |     RIGHT  	 |   	NEAR	   |	 FAR		|
+			 * |-----------------+-----------------+-------------------+---------------+-----------------+-----------------|----------------|
+			 * |        L1   --> |    VOL UP       |    VOL DOWN       |      PLAY     |      MUTE       |    NEXT SONG    |	STOP		|
+			 * |-----------------+-----------------+-------------------+---------------+-----------------+-----------------|----------------|
+			 * |        L2   --> |    VOL UP       |    VOL DOWN       |      PLAY     |       MUTE      |    NEXT SONG    |	STOP		|
+			 * |-----------------+-----------------+-------------------+---------------+-----------------+-----------------|----------------|
+			 * |    VSCODE   --> |    VOL UP       |    VOL DOWN       |      UNDO     |       PLAY      |    NEXT SONG    |	STOP		|
+			 * |-----------------------------------------------------------------------------------------------------------|----------------|
+			 * |   x  GIMP   --> |  MOUSE WHEEL UP | MOUSE WHEEL DOWN  |   100% ZOOM   |       PLAY      |    NEXT SONG    |	STOP		|
+			 * `----------------------------------------------------------------------------------------------------------------------------'
+			 */
+		{ KC_AUDIO_VOL_DOWN, KC_AUDIO_VOL_UP, KC_MEDIA_PREV_TRACK, KC_MEDIA_NEXT_TRACK,  KC_AUDIO_MUTE, KC_MEDIA_PLAY_PAUSE },
+		{ KC_AUDIO_VOL_DOWN, KC_AUDIO_VOL_UP, KC_MEDIA_PREV_TRACK, KC_MEDIA_NEXT_TRACK,  KC_AUDIO_MUTE, KC_MEDIA_PLAY_PAUSE },
+		{ KC_AUDIO_VOL_DOWN, KC_AUDIO_VOL_UP, KC_MEDIA_PREV_TRACK, KC_MEDIA_NEXT_TRACK,  KC_AUDIO_MUTE, KC_MEDIA_PLAY_PAUSE }
+		/* { KC_MS_WH_DOWN,        KC_MS_WH_UP,        KC_1,    KC_APP_GIMP_FIT_IMAGE, KC_APP_GIMP_FIT_IMAGE } */
+
+	};
+
+
+
 // Fillers to make layering more clear
 #define _______ KC_TRNS
 #define XXXXXXX KC_NO

@@ -12,6 +12,11 @@
 #include "esp_log.h"
 #include "apds9960.h"
 
+#include "nvs_funcs.h"
+#include "key_definitions.h"
+#include "keyboard_config.h"
+
+
 //#define APDS9960_VL_IO                       (gpio_num_t)19
 #define APDS9960_I2C_MASTER_SCL_IO           (gpio_num_t)22          /*!< gpio number for I2C master clock */
 #define APDS9960_I2C_MASTER_SDA_IO           (gpio_num_t)21          /*!< gpio number for I2C master data  */
@@ -26,13 +31,29 @@
 #define ESP_INTR_FLAG_DEFAULT 0
 
 //extern apds9960_handle_t apds9960;
+
+extern TaskHandle_t xOledTask;
+extern uint16_t **gesture_map;
 void IRAM_ATTR gesture_isr_handler(void *arg);
+esp_err_t set_timer(void);
+
+
+
+/**
+ * @brief
+ *
+ * @param
+ * @return
+ *      - gesture_state_t: TODO
+ */
+void gesture_command(uint8_t command, uint16_t gesture_commands[6]);
+
 
 
 void apds9960_test_gesture();
 void apds9960_deinit();
 void apds9960_init();
-
+void read_gesture();
 void config_interrup_pin(void);
 void test();
 

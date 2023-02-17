@@ -75,11 +75,9 @@
 #include "deepdeck_tasks.h"
 #include "gesture_handles.h"
 
-
 #define BASE_PRIORITY 5
 
 //void test_oled(void);
-
 
 //plugin functions
 static config_data_t config;
@@ -92,21 +90,20 @@ SemaphoreHandle_t xSemaphore = NULL;
  * 
  * This task init all the basic hardware and then init the tasks needed to run DeepDeck
  */
-void app_main() 
-{
+void app_main() {
 
-	xSemaphore= xSemaphoreCreateBinary();
+	xSemaphore = xSemaphoreCreateBinary();
 	//Reset the rtc GPIOS
 	rtc_matrix_deinit();
 	// Setup keys matrix
 	matrix_setup();
-	
+
 	// Initialize NVS (non volatile storage).
 	esp_err_t ret;
 	ret = nvs_flash_init();
 	if (ret == ESP_ERR_NVS_NO_FREE_PAGES) // If no space available, erase NVS and init it again
 	{
-		ESP_ERROR_CHECK (nvs_flash_erase());
+		ESP_ERROR_CHECK(nvs_flash_erase());
 		ret = nvs_flash_init();
 	}
 	ESP_ERROR_CHECK(ret);
@@ -115,10 +112,10 @@ void app_main()
 	nvs_handle my_handle;
 	ESP_LOGI("MAIN", "loading configuration from NVS");
 	ret = nvs_open("config_c", NVS_READWRITE, &my_handle);
-	
+
 	if (ret != ESP_OK)
 		ESP_LOGE("MAIN", "error opening NVS");
-	
+
 	size_t available_size = MAX_BT_DEVICENAME_LENGTH;
 	strcpy(config.bt_device_name, GATTS_TAG);
 	nvs_get_str(my_handle, "btname", config.bt_device_name, &available_size);
@@ -128,45 +125,43 @@ void app_main()
 	} else
 		ESP_LOGI("MAIN", "bt device name is: %s", config.bt_device_name);
 
-
 	// Set log level of the progam
 	esp_log_level_set("*", ESP_LOG_INFO);
 
 	//Loading layouts from nvs (if found)
 	nvs_load_layouts();
 	//activate keyboard BT stack
-	halBLEInit(1, 1, 1, 0);
+	halBLEInit(1, 1, 1, 0, 1);
 	ESP_LOGI("HIDD", "MAIN finished...");
 
 	apds9960_init();
 	vTaskDelay(pdMS_TO_TICKS(1000));
-	xTaskCreate(gesture_task, " gesture task", 4096, NULL, (BASE_PRIORITY+1), NULL);
+	xTaskCreate(gesture_task, " gesture task", 4096, NULL, (BASE_PRIORITY + 1),
+			NULL);
 	ESP_LOGI("Gesture", "initialized");
-
-
 
 	//activate oled
 #ifdef	OLED_ENABLE
 	init_oled(ROTATION);
-	
+
 	splashScreen();
 	vTaskDelay(pdMS_TO_TICKS(1000));
 
-	xTaskCreate(oled_task, "oled task", 1024*4, NULL,
-			BASE_PRIORITY, &xOledTask); // @suppress("Symbol is not resolved")
+	xTaskCreate(oled_task, "oled task", 1024 * 4, NULL,
+	BASE_PRIORITY, &xOledTask); // @suppress("Symbol is not resolved")
 	ESP_LOGI("Oled", "initialized");
 #endif
 
 	//activate encoder functions
 #ifdef	R_ENCODER_1
 	xTaskCreate(encoder_report, "encoder report", 4096, NULL,
-			BASE_PRIORITY, NULL);
+	BASE_PRIORITY, NULL);
 	ESP_LOGI("Encoder 1", "initialized");
 #endif
 
 #ifdef RGB_LEDS
 	xTaskCreate(rgb_leds_task, "rgb_leds_task", 4096, NULL,
-			BASE_PRIORITY, NULL);
+	BASE_PRIORITY, NULL);
 	ESP_LOGI("rgb_leds_task", "initialized");
 #endif
 
@@ -174,8 +169,8 @@ void app_main()
 	// Create the key scanning task on core 1 (otherwise it will crash)
 #ifdef MASTER
 	BLE_EN = 1;
-	xTaskCreate(key_reports, "key report task", 8192,
-			xKeyreportTask, BASE_PRIORITY, NULL);
+	xTaskCreate(key_reports, "key report task", 8192, xKeyreportTask,
+			BASE_PRIORITY, NULL);
 	ESP_LOGI("Keyboard task", "initialized");
 #endif
 
@@ -188,18 +183,11 @@ void app_main()
 
 #ifdef SLEEP_MINS
 	xTaskCreate(deep_sleep, "deep sleep task", 4096, NULL,
-			BASE_PRIORITY, NULL);
+	BASE_PRIORITY, NULL);
 	ESP_LOGI("Sleep", "initialized");
 #endif
 
-
-
-
 	ESP_LOGI("Main", "Main sequence done!"); ///////////////////////////
 
-
 }
-
-
-
 

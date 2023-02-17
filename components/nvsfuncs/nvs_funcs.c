@@ -36,12 +36,14 @@
 #define KEYMAP_NAMESPACE "keymap_config"
 #define ENCODER_NAMESPACE "encoder_config"
 #define SLAVE_ENCODER_NAMESPACE "slave_encoder_config"
+#define GESTURE_NAMESPACE "gesture_config"
 
 esp_err_t err;
 
 nvs_handle keymap_handle;
 nvs_handle encoder_handle;
 nvs_handle slave_encoder_handle;
+nvs_handle gesture_handle;
 
 #define LAYOUT_NAMES "layouts"
 #define LAYOUT_NUM "num_layouts"
@@ -51,6 +53,7 @@ uint8_t layers_num=0;
 uint16_t ***layouts;
 uint16_t **encoder_map;
 uint16_t **slave_encoder_map;
+uint16_t **gesture_map;
 
 //read a layout from nvs
 void nvs_read_layout(const char* layout_name,uint16_t buffer[MATRIX_ROWS][KEYMAP_COLS]){
@@ -152,6 +155,36 @@ void nvs_read_slave_encoder_layout(const char* layout_name,uint16_t buffer[ENCOD
 	ESP_LOGI(NVS_TAG, "Layout copied to buffer");
 	nvs_close(slave_encoder_handle);
 }
+
+
+
+void nvs_read_gesture_layout(const char* layout_name,uint16_t buffer[GESTURE_SIZE]){
+	ESP_LOGI(NVS_TAG,"Opening NVS handle");
+	uint16_t layout[GESTURE_SIZE] = {0};
+	err = nvs_open(GESTURE_NAMESPACE, NVS_READWRITE, &gesture_handle);
+	if (err != ESP_OK) {
+		ESP_LOGE(NVS_TAG,"Error (%s) opening NVS handle!\n", esp_err_to_name(err));
+	} else {
+		ESP_LOGI(NVS_TAG,"NVS Handle opened successfully");
+	}
+	size_t arr_size;
+	//get blob array size
+	err = nvs_get_blob(keymap_handle, layout_name, NULL, &arr_size);
+	err = nvs_get_blob(keymap_handle,layout_name,layout,&arr_size);
+	if (err != ESP_OK) {
+		ESP_LOGE(NVS_TAG, "Error getting layout: %s", esp_err_to_name(err));
+
+	}
+	else{
+		ESP_LOGI(NVS_TAG, "Success getting layout");
+	}
+	memcpy(buffer, layout, sizeof(layout) );
+	ESP_LOGI(NVS_TAG, "Layout copied to buffer");
+	nvs_close(gesture_handle);
+}
+
+
+
 
 //add or overwrite a slave encoder layout to the nvs
 void nvs_write_slave_encoderlayout_(uint16_t encoder_layout_arr[ENCODER_SIZE], const char* encoder_layout_name){
@@ -416,5 +449,44 @@ void nvs_load_layouts(void){
 			}
 		}
 	}
+
+
+
+
+
+	//set gesture layouts
+	if(layers_num!=0){
+		ESP_LOGI(NVS_TAG,"Gesture layouts found on NVS, loading layouts");
+		gesture_map = malloc(layers_num*sizeof(uint16_t*));
+		for(uint8_t i = 0;i < layers_num; i++){
+			uint16_t gesture_layout_buff[GESTURE_SIZE] = {0};
+			nvs_read_gesture_layout(layer_names_arr[i],gesture_layout_buff);
+			gesture_map[i] = malloc(sizeof(gesture_layout_buff));
+			ESP_LOGI(NVS_TAG,"malloc");
+			for(uint8_t key=0; key<ENCODER_SIZE;key++){
+				gesture_map[i][key] = gesture_layout_buff[key];
+			}
+		}
+	}else{
+
+		ESP_LOGI(NVS_TAG,"Gesture layouts not found on NVS, loading default layouts");
+		free(layer_names_arr);
+		gesture_map = malloc(LAYERS*sizeof(uint16_t*));
+		layer_names_arr = malloc(sizeof(default_layout_names));
+		for(uint8_t i = 0;i < LAYERS; i++){
+			gesture_map[i] = malloc(sizeof((default_gesture_map)[i]));
+			layer_names_arr[i] = malloc(sizeof(default_layout_names[i]));
+			strcpy(layer_names_arr[i],default_layout_names[i]);
+			for(uint8_t key=0; key<GESTURE_SIZE;key++){
+				gesture_map[i][key] = default_gesture_map[i][key];
+			}
+		}
+	}
+
+
+
+
+
+
 
 }

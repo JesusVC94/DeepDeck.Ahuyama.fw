@@ -184,7 +184,7 @@ esp_err_t apds9960_gesture_init(apds9960_handle_t sensor) {
 	apds9960_set_gesture_pulse(sensor, APDS9960_GPULSELEN_32US, 8);
 
 	apds9960_enable_proximity_engine(sensor, true);
-	apds9960_enable_proximity_interrupt(sensor, true);
+	apds9960_enable_proximity_interrupt(sensor, false);
 
 	apds9960_enable_gesture_interrupt(sensor, true);
 	apds9960_set_gesture_Int_Enable(sensor, 1);
@@ -821,39 +821,64 @@ uint8_t apds9960_read_gesture(apds9960_handle_t sensor) {
 	unsigned long t = 0;
 	uint8_t gestureReceived;
 	apds9960_dev_t *sens = (apds9960_dev_t*) sensor;
-
+	uint8_t time_error = 0;
 	while (1) {
 		int up_down_diff = 0;
 		int left_right_diff = 0;
 		gestureReceived = 0;
+		ESP_LOGI(":", "......");
+		if (!apds9960_gesture_valid(sensor) || time_error>10) {
+			gestureReceived=APDS9960_NONE;
 
-		if (!apds9960_gesture_valid(sensor)) {
-			return 0;
+			apds9960_reset_counts(sensor);
+			///////
+			apds9960_enable_gesture_interrupt(sensor, false);
+			apds9960_set_gesture_Int_Enable(sensor, 0);
+			apds9960_enable_gesture_interrupt(sensor, true);
+			apds9960_set_gesture_Int_Enable(sensor, 1);
+
+			return gestureReceived;
 		}
 
 		vTaskDelay(30 / portTICK_RATE_MS);
 		i2c_bus_read_byte(sens->i2c_dev, APDS9960_GFLVL, &toRead);
 		i2c_bus_read_bytes(sens->i2c_dev, APDS9960_GFIFO_U, toRead, buf);
+		ESP_LOGI(":", "buf0[%d] buf1[%d] buf2[%d] buf3[%d]",buf[0],buf[1],buf[2],buf[3]);
+
+		ESP_LOGI("*", "");
 
 		if (abs((int) buf[0] - (int) buf[1]) > 13) {
 			up_down_diff += (int) buf[0] - (int) buf[1];
+			ESP_LOGI(":", "up_down_diff = %d",up_down_diff);
 		}
 
 		if (abs((int) buf[2] - (int) buf[3]) > 13) {
 			left_right_diff += (int) buf[2] - (int) buf[3];
+			ESP_LOGI(":", "left_right_diff = %d",left_right_diff);
 		}
 
+		ESP_LOGI(":", "up_down_diff=%d  left_right_diff=%d",up_down_diff,left_right_diff);
+		ESP_LOGI(":", "up_cnt=%d  down_cnt=%d",sens->up_cnt,sens->down_cnt);
+		ESP_LOGI(":", "left_cnt=%d  right_cnt=%d",sens->left_cnt,sens->right_cnt);
+
 		if (up_down_diff != 0) {
+
 			if (up_down_diff < 0) {
+
 				if (sens->down_cnt > 0) {
+
 					gestureReceived = APDS9960_UP;
 				} else {
+					ESP_LOGI("*", "up_cnt++");
 					sens->up_cnt++;
 				}
 			} else if (up_down_diff > 0) {
+
 				if (sens->up_cnt > 0) {
+
 					gestureReceived = APDS9960_DOWN;
 				} else {
+					ESP_LOGI("*", "down_cnt++");
 					sens->down_cnt++;
 				}
 			}
@@ -864,33 +889,49 @@ uint8_t apds9960_read_gesture(apds9960_handle_t sensor) {
 				if (sens->right_cnt > 0) {
 					gestureReceived = APDS9960_LEFT;
 				} else {
+					ESP_LOGI("*", "lef++");
 					sens->left_cnt++;
 				}
 			} else if (left_right_diff > 0) {
 				if (sens->left_cnt > 0) {
 					gestureReceived = APDS9960_RIGHT;
 				} else {
+					ESP_LOGI("*", "right++");
 					sens->right_cnt++;
 				}
 			}
 		}
 
+		if(((sens->down_cnt>2) || (sens->right_cnt>2)) & ((up_down_diff==0)&(left_right_diff==0))){
+			gestureReceived = APDS9960_NEAR;
+		}
+		if(((sens->down_cnt>2) & (time_error>5)) & ((up_down_diff!=0)||(left_right_diff!=0))){
+			gestureReceived = APDS9960_FAR;
+		}
+
 		if (up_down_diff != 0 || left_right_diff != 0) {
 			t = xTaskGetTickCount();
 		}
-
+		ESP_LOGI("*", "temp_gesture = %d", gestureReceived);
 		if (gestureReceived
 				|| xTaskGetTickCount() - t > (300 / portTICK_RATE_MS)) {
+
+
 			apds9960_reset_counts(sensor);
 			///////
 			apds9960_enable_gesture_interrupt(sensor, false);
 			apds9960_set_gesture_Int_Enable(sensor, 0);
 			apds9960_enable_gesture_interrupt(sensor, true);
 			apds9960_set_gesture_Int_Enable(sensor, 1);
+
+//			vTaskDelay(pdMS_TO_TICKS(200));
+			apds9960_gesture_init(sensor);
 			//////
 			return gestureReceived;
 		}
+		time_error++;
 	}
+
 }
 
 bool apds9960_gesture_valid(apds9960_handle_t sensor) {

@@ -19,6 +19,7 @@ extern uint16_t **encoder_map;
 extern uint16_t **encoder2_map;
 
 extern uint16_t **slave_encoder_map;
+extern uint16_t **gesture_map;
 
 //amount of arrays
 extern uint8_t layers_num;

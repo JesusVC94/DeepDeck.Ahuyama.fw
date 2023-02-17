@@ -63,6 +63,11 @@ extern QueueHandle_t joystick_q;
  * @see media_command_t */
 extern QueueHandle_t media_q;
 
+/** @brief Queue for sending gesture reports
+ * @see media_command_t */
+extern QueueHandle_t gesture_q;
+
+
 /** @brief Activate/deactivate pairing mode
  * @param enable If set to != 0, pairing will be enabled. Disabled if == 0
  * @return ESP_OK on success, ESP_FAIL otherwise*/
@@ -103,6 +108,6 @@ void halBLEReset(uint8_t exceptDevice);
 /** @brief Main init function to start HID interface (C interface)
  * @see hid_ble */
 esp_err_t halBLEInit(uint8_t enableKeyboard, uint8_t enableMedia,
-		uint8_t enableMouse, uint8_t enableJoystick);
+		uint8_t enableMouse, uint8_t enableJoystick, uint8_t enableGesture );
 
 #endif /* _HAL_BLE_H_ */

@@ -233,6 +233,10 @@ typedef uint8_t consumer_cmd_t;
 // HID consumer control input report length
 #define HID_CC_IN_RPT_LEN           2
 
+// HID gesture  input report length
+#define HID_GESTURE_IN_RPT_LEN 			6
+
+
 // HID report mapping table
 typedef struct {
 	uint16_t handle;           // Handle of report characteristic
